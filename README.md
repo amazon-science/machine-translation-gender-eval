@@ -1,18 +1,18 @@
-## My Project
+# MT-GenEval
+MT-GenEval is a benchmark dataset for evaluating gender accuracy in translation in two genders (female and male) from English into eight widely-spoken languages: Arabic (AR), French (FR), German (DE), Hindi (HI), Italian (IT), Portuguese (PT), Russian (RU), and Spanish (ES).
 
-TODO: Fill this README out!
+MT-GenEval complements existing benchmarks by providing realistic, gender-balanced, counterfactual data in eight language pairs where the gender of individuals is unambiguous in the input segment, including multi-sentence segments requiring inter-sentential gender agreement.
 
-Be sure to:
 
-* Change the title in this README
-* Edit your repository description on GitHub
-* Write in your license below and create a LICENSE file
+## Data
+The data is originally sourced from Wikipedia. 
 
-## Security
 
-See [CONTRIBUTING](CONTRIBUTING.md#security-issue-notifications) for more information.
+## Repository
+This repository contains code and data for reproducing the experiments in MT-GenEval: A Counterfactual and Contextual Dataset for Evaluating.
+
+## Install
+
 
 ## License
-
-This library is licensed under the LICENSE NAME HERE License.
-
+The data and code are released under the CC-BY-SA-3.0 License. See LICENSE file for details.
