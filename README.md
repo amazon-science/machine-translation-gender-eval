@@ -11,8 +11,6 @@ The data is originally sourced from Wikipedia.
 ## Repository
 This repository contains code and data for reproducing the experiments in MT-GenEval: A Counterfactual and Contextual Dataset for Evaluating.
 
-## Install
-
 
 ## License
 The data and code are released under the CC-BY-SA-3.0 License. See LICENSE file for details.
