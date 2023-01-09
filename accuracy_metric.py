@@ -11,15 +11,14 @@ STRIP_PUNCT = str.maketrans(string.punctuation, ' '*len(string.punctuation))
 
 
 def accuracy_metric(hypothesis, cor_ref, inc_ref):
-    '''
-    INPUTS
-        hypothesis -- AMT hypothesis file to be evaluated
-        cor_ref -- Correctly gendered reference file path
-        inc_ref -- Incorrect (counterfactual) reference file path
+    """
+    Compute whether gender is correct in the translation given actual reference and counterfactual reference
     We assume input files contain one sentence per line
-        
-    RETURNS decision (Corrct/Incorrect), one per each line in the input files
-    '''
+    :param hypothesis: AMT hypothesis file to be evaluated
+    :param cor_ref: Correctly gendered reference file path
+    :param inc_ref: Incorrect (counterfactual) reference file path
+    :return decision (Corrct/Incorrect), one per each line in the input files
+    """
     # read in the files. 
     # Note that each line of the input files will be lowercased and punctuation will be removed. 
     trg_list = read_file_to_list(hypothesis)
@@ -29,9 +28,6 @@ def accuracy_metric(hypothesis, cor_ref, inc_ref):
     assert len(trg_list) == len(cor_list), f'Output file and original reference file must have the same number of lines. Files are {hypothesis}, {cor_ref}'
     assert len(trg_list) == len(inc_list), f'Output file and counterfactual reference file must have the same number of lines. Files are {hypothesis},  {inc_ref}'
 
-    # get the pre-specified label map
-    label_map = gender_label_map()
-
     metric_annot_mapped = []    
     for trg_line, cor_line, inc_line in zip(trg_list, cor_list, inc_list):
         [decision, trg_correct, trg_incorrect] = gender_decision(trg_line, cor_line, inc_line)
@@ -40,17 +36,13 @@ def accuracy_metric(hypothesis, cor_ref, inc_ref):
     return accuracy, metric_annot_mapped
 
 
-def gender_label_map():
-    ## it is a pre-specified label map used for model training
-    label_map = {'Correct':'Correct',
-                'Unspecified': 'Correct',
-                'Incorrect':'Incorrect',
-                'Mixed': 'Incorrect',
-                'Other': 'Incorrect'}
-    return label_map
+def logicaloperation_AND(decision1, decision2):
+    combined_decision = ['Incorrect' if 'Incorrect' in [d1,d2] else 'Correct' for d1,d2 in zip(decision1, decision2)]
+    accuracy = combined_decision.count('Correct')/len(combined_decision)
+    return accuracy, combined_decision
 
 
-def _clean_line(line):
+def clean_line(line):
     """
     For an input line, lowercase it, strip extra spaces, and replace punctuation with spaces.
 
@@ -60,7 +52,7 @@ def _clean_line(line):
     return line.lower().translate(STRIP_PUNCT).strip()
 
 
-def _get_words(line):
+def get_words(line):
     """
     Helper function to get the set of words in a line.
 
@@ -71,6 +63,9 @@ def _get_words(line):
 
 
 def get_trg_correct_incorrect(cor_words, inc_words, trg_words):
+    """
+    Compute overlap between references and translation
+    """
     cor_unique = cor_words - inc_words
     inc_unique = inc_words - cor_words
     # now check the words in the target sentence for overlap with incorrect unique words
@@ -90,11 +85,11 @@ def gender_decision(trg_line, cor_line, inc_line):
     :return: a list of decision, overlap(hyp, original ref), overlap(hyp, counterfactual ref)
     """
     # start by getting unique words in each of the references
-    cor_words, inc_words = _get_words(cor_line), _get_words(inc_line)
-    trg_words = _get_words(trg_line)
+    cor_words, inc_words = get_words(cor_line), get_words(inc_line)
+    trg_words = get_words(trg_line)
     trg_correct, trg_incorrect = get_trg_correct_incorrect(cor_words, inc_words, trg_words)
 
-    if (trg_incorrect):
+    if trg_incorrect:
         decision = 'Incorrect'
     else:
         decision = 'Correct'
@@ -112,7 +107,7 @@ def read_file_to_list(filename):
     out_list = []
     with open(filename, 'r') as infile:
         for line in infile:
-            cleaned_line = _clean_line(line)
+            cleaned_line = clean_line(line)
             out_list.append(cleaned_line)
     return out_list
 
