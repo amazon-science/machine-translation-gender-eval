@@ -37,6 +37,11 @@ def accuracy_metric(hypothesis, cor_ref, inc_ref):
 
 
 def logicaloperation_AND(decision1, decision2):
+    """
+    Performs AND operation (per line) on the inputs: returns 'Correct' only if both inputs are 'Correct'. 
+    :param decision1 and decision2: lists with each line either 'Correct' or 'Incorrect'
+    :return: accuracy and list of decisions
+    """
     combined_decision = ['Incorrect' if 'Incorrect' in [d1,d2] else 'Correct' for d1,d2 in zip(decision1, decision2)]
     accuracy = combined_decision.count('Correct')/len(combined_decision)
     return accuracy, combined_decision
