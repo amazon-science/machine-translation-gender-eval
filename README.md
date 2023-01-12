@@ -28,21 +28,26 @@ The data is originally sourced from Wikipedia.
 We include sentence-level development and test segments in `data/sentences/` and inter-sentence test segments in `data/context/`. 
 
 ## Compute accuracy
-To compute accuracy, call `accuracy_metric` function in `accuracy_metric.py`. Example usage for English-Russian contextual dataset is as follows
+To compute accuracy, use `accuracy_metric.py` script. 
+Example usage for English-Russian contextual dev dataset is as follows
 ```
-hypothesis_path = PATH_FOR_YOUR_SYSTEM_TRANSLATIONS
-references_path = 'data/context/geneval-context-wikiprofessions-original-test.en_ru.ru'
-flipped_references_path = 'data/context/geneval-context-wikiprofessions-flipped-test.en_ru.ru'
-accuracy, metric_decisions = accuracy_metric(hypothesis_path, references_path, flipped_references_path)
+python3 accuracy_metric.py \
+        --target_lang ru \
+        --dataset contextual \
+        --data_split dev \
+        --hyp PATH_FOR_YOUR_SYSTEM_TRANSLATIONS
 ```
-For counterfactual dataset (the data in `data/sentences/`), metric decision can be obtained similarly but the accuracy computation is a little different as mentioned in Sec 3.1 of the paper. We consider a segment `Correct` only if both the original and the counterfactual segments are `Correct`. More specifically, 
+Example usage for English-Russian counterfactual dev dataset is as follows
 ```
-_, metric_decisions_masculine = accuracy_metric(hypothesis_masculine_path, masculine_references_path, female_references_path)
-_, metric_decisions_feminine = accuracy_metric(hypothesis_feminine_path, feminine_references_path, masculine_references_path)
-accuracy, combined_decision = logicaloperation_AND(metric_decisions_masculine, metric_decisions_feminine)
+python3 accuracy_metric.py \
+        --target_lang ru \
+        --dataset counterfactual \
+        --data_split dev \
+        --hyp_masculine PATH_FOR_YOUR_SYSTEM_TRANSLATIONS_FOR_MASCULINE_SEGMENTS \
+        --hyp_feminine PATH_FOR_YOUR_SYSTEM_TRANSLATIONS_FOR_FEMININE_SEGMENTS
 ```
 
-
+Note that --hyp and 
 
 ## Security
 See [CONTRIBUTING](CONTRIBUTING.md#security-issue-notifications) for more information.
