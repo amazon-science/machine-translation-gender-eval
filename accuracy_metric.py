@@ -5,46 +5,10 @@ We first check the references for unique/gender-specific terms, then check for o
 and the hypothesis. If there is overlap, we mark the segment as incorrect.
 """
 import string
+import argparse
 
 
 STRIP_PUNCT = str.maketrans(string.punctuation, ' '*len(string.punctuation))
-
-
-def accuracy_metric(hypothesis, cor_ref, inc_ref):
-    """
-    Compute whether gender is correct in the translation given actual reference and counterfactual reference
-    We assume input files contain one sentence per line
-    :param hypothesis: AMT hypothesis file to be evaluated
-    :param cor_ref: Correctly gendered reference file path
-    :param inc_ref: Incorrect (counterfactual) reference file path
-    :return decision (Corrct/Incorrect), one per each line in the input files
-    """
-    # read in the files. 
-    # Note that each line of the input files will be lowercased and punctuation will be removed. 
-    trg_list = read_file_to_list(hypothesis)
-    cor_list = read_file_to_list(cor_ref)
-    inc_list = read_file_to_list(inc_ref)
-
-    assert len(trg_list) == len(cor_list), f'Output file and original reference file must have the same number of lines. Files are {hypothesis}, {cor_ref}'
-    assert len(trg_list) == len(inc_list), f'Output file and counterfactual reference file must have the same number of lines. Files are {hypothesis},  {inc_ref}'
-
-    metric_annot_mapped = []    
-    for trg_line, cor_line, inc_line in zip(trg_list, cor_list, inc_list):
-        [decision, trg_correct, trg_incorrect] = gender_decision(trg_line, cor_line, inc_line)
-        metric_annot_mapped.append(decision) 
-    accuracy = metric_annot_mapped.count('Correct')/len(metric_annot_mapped)
-    return accuracy, metric_annot_mapped
-
-
-def logicaloperation_AND(decision1, decision2):
-    """
-    Performs AND operation (per line) on the inputs: returns 'Correct' only if both inputs are 'Correct'. 
-    :param decision1 and decision2: lists with each line either 'Correct' or 'Incorrect'
-    :return: accuracy and list of decisions
-    """
-    combined_decision = ['Incorrect' if 'Incorrect' in [d1,d2] else 'Correct' for d1,d2 in zip(decision1, decision2)]
-    accuracy = combined_decision.count('Correct')/len(combined_decision)
-    return accuracy, combined_decision
 
 
 def clean_line(line):
@@ -115,4 +79,83 @@ def read_file_to_list(filename):
             cleaned_line = clean_line(line)
             out_list.append(cleaned_line)
     return out_list
+
+
+def accuracy_metric(hypothesis, cor_ref, inc_ref):
+    """
+    Compute whether gender is correct in the translation given actual reference and counterfactual reference
+    We assume input files contain one sentence per line
+    :param hypothesis: AMT hypothesis file to be evaluated
+    :param cor_ref: Correctly gendered reference file path
+    :param inc_ref: Incorrect (counterfactual) reference file path
+    :return decision (Corrct/Incorrect), one per each line in the input files
+    """
+    # read in the files. 
+    # Note that each line of the input files will be lowercased and punctuation will be removed. 
+    trg_list = read_file_to_list(hypothesis)
+    cor_list = read_file_to_list(cor_ref)
+    inc_list = read_file_to_list(inc_ref)
+
+    assert len(trg_list) == len(cor_list), f'Output file and original reference file must have the same number of lines. Files are {hypothesis}, {cor_ref}'
+    assert len(trg_list) == len(inc_list), f'Output file and counterfactual reference file must have the same number of lines. Files are {hypothesis},  {inc_ref}'
+
+    metric_annot_mapped = []    
+    for trg_line, cor_line, inc_line in zip(trg_list, cor_list, inc_list):
+        [decision, trg_correct, trg_incorrect] = gender_decision(trg_line, cor_line, inc_line)
+        metric_annot_mapped.append(decision) 
+    accuracy = metric_annot_mapped.count('Correct')/len(metric_annot_mapped)
+    return accuracy, metric_annot_mapped
+
+
+def logicaloperation_AND(decision1, decision2):
+    """
+    Performs AND operation (per line) on the inputs: returns 'Correct' only if both inputs are 'Correct'. 
+    :param decision1 and decision2: lists with each line either 'Correct' or 'Incorrect'
+    :return: accuracy and list of decisions
+    """
+    combined_decision = ['Incorrect' if 'Incorrect' in [d1,d2] else 'Correct' for d1,d2 in zip(decision1, decision2)]
+    accuracy = combined_decision.count('Correct')/len(combined_decision)
+    return accuracy, combined_decision
+
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--target_lang', type=str, help='one of ar,de,es,fr,hi,it,pt,ru')
+    parser.add_argument('--dataset', type=str, help='contextual or counterfactual')
+    parser.add_argument('--data_split', type=str, help='dev or test')
+    parser.add_argument('--hyp', type=str, help='System translations path for contextual dataset', default=None)
+    parser.add_argument('--hyp_masculine', type=str, 
+                        help='System translations path for masculine segments in the case of counterfactual subset', default=None)
+    parser.add_argument('--hyp_feminine', type=str, 
+                        help='System translations path for feminine segments in the case of counterfactual subset', default=None)
+    args = parser.parse_args()
+    return args
+
+
+def main():
+    """
+    Computes accuracy for the counterfactual and contextual datasets
+    """
+    args = parse_args()
+
+    if args.dataset == 'contextual':
+        ref_path = f'data/context/geneval-context-wikiprofessions-original-{args.data_split}.en_{args.target_lang}.{args.target_lang}'
+        flipped_ref_path = f'data/context/geneval-context-wikiprofessions-flipped-{args.data_split}.en_{args.target_lang}.{args.target_lang}'
+        accuracy, metric_decisions = accuracy_metric(args.hyp, ref_path, flipped_ref_path)
+    elif args.dataset == 'counterfactual':
+        masculine_ref_path = f'data/sentences/{args.data_split}/geneval-sentences-masculine-{args.data_split}.en_{args.target_lang}.{args.target_lang}'
+        feminine_ref_path = f'data/sentences/{args.data_split}/geneval-sentences-feminine-{args.data_split}.en_{args.target_lang}.{args.target_lang}'
+        _, metric_decisions_masculine = accuracy_metric(args.hyp_masculine, masculine_ref_path, feminine_ref_path)
+        _, metric_decisions_feminine = accuracy_metric(args.hyp_feminine, feminine_ref_path, masculine_ref_path)
+        accuracy, combined_decision = logicaloperation_AND(metric_decisions_masculine, metric_decisions_feminine)
+    else:
+        raise ValueError(f'Invalid argument for dataset {args.dataset}. Valid options are contextual, counterfactual')
+
+    print(f'MTGenEval Accuracy for the en_{args.target_lang} {args.dataset} {args.data_split} subset is {accuracy}')
+    
+
+if __name__ == '__main__':
+    main()
+
+
 
