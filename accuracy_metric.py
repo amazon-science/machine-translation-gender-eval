@@ -4,6 +4,7 @@ We use the correct (gender-matched) references and incorrect (counterfactual/swa
 We first check the references for unique/gender-specific terms, then check for overlap with the incorrect gender
 and the hypothesis. If there is overlap, we mark the segment as incorrect.
 """
+import os
 import string
 import argparse
 
@@ -31,10 +32,14 @@ def get_words(line):
     return set(line.strip().split())
 
 
-def get_trg_correct_incorrect(cor_words, inc_words, trg_words):
+def get_trg_correct_incorrect(trg_line, cor_line, inc_line):
     """
     Compute overlap between references and translation
-    """
+    We first get unique words in each of the references w.r.t each other then we compute their overlap with target
+    """ 
+    # get words for each segment
+    trg_words, cor_words, inc_words = get_words(trg_line), get_words(cor_line), get_words(inc_line)
+    # get unique words in each of the references
     cor_unique = cor_words - inc_words
     inc_unique = inc_words - cor_words
     # now check the words in the target sentence for overlap with incorrect unique words
@@ -53,10 +58,7 @@ def gender_decision(trg_line, cor_line, inc_line):
     :param inc_line: Masculine reference.
     :return: a list of decision, overlap(hyp, original ref), overlap(hyp, counterfactual ref)
     """
-    # start by getting unique words in each of the references
-    cor_words, inc_words = get_words(cor_line), get_words(inc_line)
-    trg_words = get_words(trg_line)
-    trg_correct, trg_incorrect = get_trg_correct_incorrect(cor_words, inc_words, trg_words)
+    trg_correct, trg_incorrect = get_trg_correct_incorrect(trg_line, cor_line, inc_line)
 
     if trg_incorrect:
         decision = 'Incorrect'
@@ -107,22 +109,13 @@ def accuracy_metric(hypothesis, cor_ref, inc_ref):
     return accuracy, metric_annot_mapped
 
 
-def logicaloperation_AND(decision1, decision2):
-    """
-    Performs AND operation (per line) on the inputs: returns 'Correct' only if both inputs are 'Correct'. 
-    :param decision1 and decision2: lists with each line either 'Correct' or 'Incorrect'
-    :return: accuracy and list of decisions
-    """
-    combined_decision = ['Incorrect' if 'Incorrect' in [d1,d2] else 'Correct' for d1,d2 in zip(decision1, decision2)]
-    accuracy = combined_decision.count('Correct')/len(combined_decision)
-    return accuracy, combined_decision
-
-
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--target_lang', type=str, help='one of ar,de,es,fr,hi,it,pt,ru')
-    parser.add_argument('--dataset', type=str, help='contextual or counterfactual')
-    parser.add_argument('--data_split', type=str, help='dev or test')
+    parser.add_argument('--target_lang', type=str, choices=['ar', 'de', 'es', 'fr', 'hi', 'it', 'pt', 'ru'], 
+                        help='Target language codes. Arabic->ar, German->de, Spanish->es, \
+                        French->fr, Hindi->hi, Italian->it, Portuguese->pt, Russian->ru')
+    parser.add_argument('--dataset', type=str, choices=['contextual', 'counterfactual'], help='Type of MTGenEval dataset to be evaluated')
+    parser.add_argument('--data_split', type=str, choices=['dev', 'test'], help='MTGenEval data split to be evaluated')
     parser.add_argument('--hyp', type=str, help='System translations path for contextual dataset', default=None)
     parser.add_argument('--hyp_masculine', type=str, 
                         help='System translations path for masculine segments in the case of counterfactual subset', default=None)
@@ -138,16 +131,22 @@ def main():
     """
     args = parse_args()
 
+    if args.data_split not in ['dev', 'test']:
+        raise ValueError(f'Invalid argument for data_split {args.data_split}. Valid options are dev and test')
+
+    current_dir = os.path.dirname(os.path.abspath(__file__))
     if args.dataset == 'contextual':
-        ref_path = f'data/context/geneval-context-wikiprofessions-original-{args.data_split}.en_{args.target_lang}.{args.target_lang}'
-        flipped_ref_path = f'data/context/geneval-context-wikiprofessions-flipped-{args.data_split}.en_{args.target_lang}.{args.target_lang}'
+        ref_path = f'{current_dir}/data/context/geneval-context-wikiprofessions-original-{args.data_split}.en_{args.target_lang}.{args.target_lang}'
+        flipped_ref_path = f'{current_dir}/data/context/geneval-context-wikiprofessions-flipped-{args.data_split}.en_{args.target_lang}.{args.target_lang}'
         accuracy, metric_decisions = accuracy_metric(args.hyp, ref_path, flipped_ref_path)
     elif args.dataset == 'counterfactual':
-        masculine_ref_path = f'data/sentences/{args.data_split}/geneval-sentences-masculine-{args.data_split}.en_{args.target_lang}.{args.target_lang}'
-        feminine_ref_path = f'data/sentences/{args.data_split}/geneval-sentences-feminine-{args.data_split}.en_{args.target_lang}.{args.target_lang}'
+        masculine_ref_path = f'{current_dir}/data/sentences/{args.data_split}/geneval-sentences-masculine-{args.data_split}.en_{args.target_lang}.{args.target_lang}'
+        feminine_ref_path = f'{current_dir}/data/sentences/{args.data_split}/geneval-sentences-feminine-{args.data_split}.en_{args.target_lang}.{args.target_lang}'
         _, metric_decisions_masculine = accuracy_metric(args.hyp_masculine, masculine_ref_path, feminine_ref_path)
         _, metric_decisions_feminine = accuracy_metric(args.hyp_feminine, feminine_ref_path, masculine_ref_path)
-        accuracy, combined_decision = logicaloperation_AND(metric_decisions_masculine, metric_decisions_feminine)
+        # combined_decision -- 'Correct' only if both metric_decisions_masculine/feminine are 'Correct'
+        combined_decision = ['Incorrect' if 'Incorrect' in [d1,d2] else 'Correct' for d1,d2 in zip(metric_decisions_masculine, metric_decisions_feminine)]
+        accuracy = combined_decision.count('Correct')/len(combined_decision)
     else:
         raise ValueError(f'Invalid argument for dataset {args.dataset}. Valid options are contextual, counterfactual')
 
