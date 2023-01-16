@@ -34,7 +34,7 @@ Example usage for English-Russian contextual dev dataset is as follows
 python3 accuracy_metric.py \
         --target_lang ru \
         --dataset contextual \
-        --data_split dev \
+        --data_split test \
         --hyp PATH_FOR_YOUR_SYSTEM_TRANSLATIONS
 ```
 Example usage for English-Russian counterfactual dev dataset is as follows
@@ -42,12 +42,10 @@ Example usage for English-Russian counterfactual dev dataset is as follows
 python3 accuracy_metric.py \
         --target_lang ru \
         --dataset counterfactual \
-        --data_split dev \
+        --data_split test \
         --hyp_masculine PATH_FOR_YOUR_SYSTEM_TRANSLATIONS_FOR_MASCULINE_SEGMENTS \
         --hyp_feminine PATH_FOR_YOUR_SYSTEM_TRANSLATIONS_FOR_FEMININE_SEGMENTS
 ```
-
-Note that --hyp and 
 
 ## Security
 See [CONTRIBUTING](CONTRIBUTING.md#security-issue-notifications) for more information.
