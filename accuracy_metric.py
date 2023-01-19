@@ -32,33 +32,33 @@ def get_words(line):
     return set(line.strip().split())
 
 
-def get_trg_correct_incorrect(trg_line, cor_line, inc_line):
+def get_trg_correct_incorrect(trg_line, orig_ref, ctf_ref):
     """
     Compute overlap between references and translation
     We first get unique words in each of the references w.r.t each other then we compute their overlap with target
     """ 
     # get words for each segment
-    trg_words, cor_words, inc_words = get_words(trg_line), get_words(cor_line), get_words(inc_line)
+    trg_words, orig_words, ctf_words = get_words(trg_line), get_words(orig_ref), get_words(ctf_ref)
     # get unique words in each of the references
-    cor_unique = cor_words - inc_words
-    inc_unique = inc_words - cor_words
+    orig_unique = orig_words - ctf_words
+    ctf_unique = ctf_words - orig_words
     # now check the words in the target sentence for overlap with incorrect unique words
-    trg_correct = trg_words & cor_unique 
-    trg_incorrect = trg_words & inc_unique
+    trg_correct = trg_words & orig_unique 
+    trg_incorrect = trg_words & ctf_unique
     return trg_correct, trg_incorrect 
 
 
-def gender_decision(trg_line, cor_line, inc_line):
+def gender_decision(trg_line, orig_ref, ctf_ref):
     """
     Check if gender of a sentence is correct based on corresponding correct and incorrect references.
     Algorithm: We make decision based on whether hyp overlaps with original ref and counterfactual ref
 
     :param trg_line: Sentence from translation output for which to check gender.
-    :param cor_line: Feminine reference.
-    :param inc_line: Masculine reference.
+    :param orig_ref: Original (Correct) reference.
+    :param ctf_ref: Counterfactual reference.
     :return: a list of decision, overlap(hyp, original ref), overlap(hyp, counterfactual ref)
     """
-    trg_correct, trg_incorrect = get_trg_correct_incorrect(trg_line, cor_line, inc_line)
+    trg_correct, trg_incorrect = get_trg_correct_incorrect(trg_line, orig_ref, ctf_ref)
 
     if trg_incorrect:
         decision = 'Incorrect'
@@ -83,27 +83,27 @@ def read_file_to_list(filename):
     return out_list
 
 
-def accuracy_metric(hypothesis, cor_ref, inc_ref):
+def accuracy_metric(hypothesis, orig_ref, ctf_ref):
     """
     Compute whether gender is correct in the translation given actual reference and counterfactual reference
     We assume input files contain one sentence per line
     :param hypothesis: AMT hypothesis file to be evaluated
-    :param cor_ref: Correctly gendered reference file path
-    :param inc_ref: Incorrect (counterfactual) reference file path
+    :param orig_ref: Correctly gendered reference file path
+    :param ctf_ref: Incorrect (counterfactual) reference file path
     :return decision (Corrct/Incorrect), one per each line in the input files
     """
     # read in the files. 
     # Note that each line of the input files will be lowercased and punctuation will be removed. 
     trg_list = read_file_to_list(hypothesis)
-    cor_list = read_file_to_list(cor_ref)
-    inc_list = read_file_to_list(inc_ref)
+    cor_list = read_file_to_list(orig_ref)
+    inc_list = read_file_to_list(ctf_ref)
 
-    assert len(trg_list) == len(cor_list), f'Output file and original reference file must have the same number of lines. Files are {hypothesis}, {cor_ref}'
-    assert len(trg_list) == len(inc_list), f'Output file and counterfactual reference file must have the same number of lines. Files are {hypothesis},  {inc_ref}'
+    assert len(trg_list) == len(cor_list), f'Output file and original reference file must have the same number of lines. Files are {hypothesis}, {orig_ref}'
+    assert len(trg_list) == len(inc_list), f'Output file and counterfactual reference file must have the same number of lines. Files are {hypothesis},  {ctf_ref}'
 
     metric_annot_mapped = []    
-    for trg_line, cor_line, inc_line in zip(trg_list, cor_list, inc_list):
-        [decision, trg_correct, trg_incorrect] = gender_decision(trg_line, cor_line, inc_line)
+    for trg_line, orig_ref, ctf_ref in zip(trg_list, cor_list, inc_list):
+        [decision, trg_correct, trg_incorrect] = gender_decision(trg_line, orig_ref, ctf_ref)
         metric_annot_mapped.append(decision) 
     accuracy = metric_annot_mapped.count('Correct')/len(metric_annot_mapped)
     return accuracy, metric_annot_mapped

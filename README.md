@@ -29,7 +29,7 @@ We include sentence-level development and test segments in `data/sentences/` and
 
 ## Compute accuracy
 To compute accuracy, use `accuracy_metric.py` script. 
-Example usage for English-Russian contextual dev dataset is as follows
+Example usage for English-Russian contextual test dataset is as follows
 ```
 python3 accuracy_metric.py \
         --target_lang ru \
@@ -37,7 +37,7 @@ python3 accuracy_metric.py \
         --data_split test \
         --hyp PATH_FOR_YOUR_SYSTEM_TRANSLATIONS
 ```
-Example usage for English-Russian counterfactual dev dataset is as follows
+Example usage for English-Russian counterfactual test dataset is as follows
 ```
 python3 accuracy_metric.py \
         --target_lang ru \
