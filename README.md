@@ -27,6 +27,26 @@ The MT-GenEval benchmark was released in the EMNLP 2022 paper [MT-GenEval: A Cou
 The data is originally sourced from Wikipedia. 
 We include sentence-level development and test segments in `data/sentences/` and inter-sentence test segments in `data/context/`. 
 
+## Compute accuracy
+To compute accuracy, use `accuracy_metric.py` script. 
+Example usage for English-Russian contextual test dataset is as follows
+```
+python3 accuracy_metric.py \
+        --target_lang ru \
+        --dataset contextual \
+        --data_split test \
+        --hyp PATH_FOR_YOUR_SYSTEM_TRANSLATIONS
+```
+Example usage for English-Russian counterfactual test dataset is as follows
+```
+python3 accuracy_metric.py \
+        --target_lang ru \
+        --dataset counterfactual \
+        --data_split test \
+        --hyp_masculine PATH_FOR_YOUR_SYSTEM_TRANSLATIONS_FOR_MASCULINE_SEGMENTS \
+        --hyp_feminine PATH_FOR_YOUR_SYSTEM_TRANSLATIONS_FOR_FEMININE_SEGMENTS
+```
+
 ## Security
 See [CONTRIBUTING](CONTRIBUTING.md#security-issue-notifications) for more information.
 
